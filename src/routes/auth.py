@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import uuid
-from ..services.pgp_verifier import verify_login 
+from ..services import verify_login 
 
 router = APIRouter()
 templates = Jinja2Templates(directory="src/templates")
