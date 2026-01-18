@@ -25,13 +25,6 @@ class ConnectionManager:
         if user_id in self.active_connections:
             del self.active_connections[user_id]
 
-    async def broadcast(self, message: str, sender: str):
-        for connection in self.active_connections.values():
-            try:
-                await connection.send_text(f"[{sender}]: {message}")
-            except:
-                pass
-
     async def send_personal_message(self, message: str, sender: str, recipient: str):
         if recipient in self.active_connections:
             try:
@@ -145,7 +138,6 @@ async def conversation(request: Request, recipient_id: str, user_id: Optional[st
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
     await manager.connect(websocket, client_id)
     try:
-        await manager.broadcast(f"User {client_id} joined", "System")
         while True:
             data = await websocket.receive_text()
             try:
@@ -158,7 +150,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 pass
     except WebSocketDisconnect:
         manager.disconnect(client_id)
-        await manager.broadcast(f"User {client_id} left", "System")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
