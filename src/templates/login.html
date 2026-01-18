@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PGP Login</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        textarea { width: 100%; height: 150px; font-family: monospace; }
+        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .challenge { background: #f0f0f0; padding: 10px; font-family: monospace; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>PGP Chat Login</h1>
+    
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <div class="box">
+        <h3>1. Sign this Challenge</h3>
+        <p>Copy the text below and sign it with your PGP key (Clearsign).</p>
+        <div class="challenge">{{ challenge }}</div>
+    </div>
+
+    <form action="/login" method="post">
+        <input type="hidden" name="challenge_id" value="{{ challenge_id }}">
+        
+        <h3>2. Enter Public Key</h3>
+        <textarea name="public_key" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----..."></textarea>
+        
+        <h3>3. Enter Signed Message (ASCII Armored)</h3>
+        <textarea name="signature" placeholder="-----BEGIN PGP SIGNED MESSAGE-----..."></textarea>
+        
+        <br><br>
+        <button type="submit" style="padding: 10px 20px;">Login</button>
+    </form>
+</body>
+</html>
