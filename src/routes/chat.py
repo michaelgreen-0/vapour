@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect, Cookie, Depends
+from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from typing import Optional
