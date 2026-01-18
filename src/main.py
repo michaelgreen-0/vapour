@@ -6,6 +6,7 @@ import uuid
 import uvicorn
 import traceback
 from typing import Dict, Optional
+import json
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -31,12 +32,24 @@ class ConnectionManager:
             except:
                 pass
 
+    async def send_personal_message(self, message: str, sender: str, recipient: str):
+        if recipient in self.active_connections:
+            try:
+                await self.active_connections[recipient].send_text(f"[{sender}]: {message}")
+            except:
+                pass
+        if sender in self.active_connections:
+            try:
+                await self.active_connections[sender].send_text(f"[You->{recipient}]: {message}")
+            except:
+                pass
+
 manager = ConnectionManager()
 
 def verify_login(public_key_str, clearsigned_str, expected_challenge):
     try:
-        clearsigned_str = clearsigned_str.replace('\r\n', '\n').strip()
-        public_key_str = public_key_str.strip()
+        clearsigned_str = clearsigned_str.replace('\u202f', ' ').replace('\r\n', '\n').strip()
+        public_key_str = public_key_str.replace('\u202f', ' ').strip()
 
         key, _ = pgpy.PGPKey.from_blob(public_key_str)
         msg = pgpy.PGPMessage.from_blob(clearsigned_str)
@@ -118,6 +131,16 @@ async def chat(request: Request, user_id: Optional[str] = Cookie(None)):
         return RedirectResponse(url="/")
     return templates.TemplateResponse("chat.html", {"request": request, "user_id": user_id})
 
+@app.get("/chat/{recipient_id}", response_class=HTMLResponse)
+async def conversation(request: Request, recipient_id: str, user_id: Optional[str] = Cookie(None)):
+    if not user_id:
+        return RedirectResponse(url="/")
+    return templates.TemplateResponse("conversation.html", {
+        "request": request, 
+        "user_id": user_id, 
+        "recipient_id": recipient_id
+    })
+
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
     await manager.connect(websocket, client_id)
@@ -125,7 +148,14 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         await manager.broadcast(f"User {client_id} joined", "System")
         while True:
             data = await websocket.receive_text()
-            await manager.broadcast(data, client_id)
+            try:
+                payload = json.loads(data)
+                target_user = payload.get("target_user")
+                message = payload.get("message")
+                if target_user and message:
+                    await manager.send_personal_message(message, client_id, target_user)
+            except json.JSONDecodeError:
+                pass
     except WebSocketDisconnect:
         manager.disconnect(client_id)
         await manager.broadcast(f"User {client_id} left", "System")

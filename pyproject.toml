@@ -7,7 +7,7 @@ dependencies = [
     "jinja2>=3.1.6",
     "pgpy>=0.6.0",
     "python-multipart>=0.0.21",
-    "uvicorn>=0.40.0",
+    "uvicorn[standard]>=0.40.0",
 ]
 
 [dependency-groups]

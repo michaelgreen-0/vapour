@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat with {{ recipient_id }}</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #messages { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; }
+        #input-area { display: flex; gap: 10px; }
+        #messageText { flex-grow: 1; padding: 10px; }
+        button { padding: 10px 20px; }
+    </style>
+</head>
+<body>
+    <h1>Chat with {{ recipient_id }}</h1>
+    <p><a href="/chat">&larr; Back to contacts</a></p>
+    
+    <div id="messages"></div>
+    
+    <div id="input-area">
+        <input type="text" id="messageText" autocomplete="off" placeholder="Type a message..." />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        var ws = new WebSocket("ws://" + window.location.host + "/ws/{{ user_id }}");
+        var recipient = "{{ recipient_id }}";
+        
+        ws.onmessage = function(event) {
+            var messages = document.getElementById('messages');
+            var data = event.data;
+            
+            // Filter messages to only show those relevant to this conversation
+            var isRelevant = false;
+            if (data.startsWith("[" + recipient + "]:")) isRelevant = true;
+            if (data.startsWith("[You->" + recipient + "]:")) isRelevant = true;
+            if (data.includes("System")) isRelevant = true;
+            
+            if (isRelevant) {
+                var message = document.createElement('div');
+                message.innerText = data;
+                messages.appendChild(message);
+                messages.scrollTop = messages.scrollHeight;
+            }
+        };
+
+        function sendMessage() {
+            var input = document.getElementById("messageText");
+            if(input.value.trim() !== "") {
+                ws.send(JSON.stringify({
+                    target_user: recipient,
+                    message: input.value
+                }));
+                input.value = '';
+            }
+        }
+        
+        document.getElementById("messageText").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") sendMessage();
+        });
+    </script>
+</body>
+</html>
