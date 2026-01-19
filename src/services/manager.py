@@ -17,10 +17,10 @@ class ConnectionManager:
         if recipient in self.active_connections:
             try:
                 await self.active_connections[recipient].send_text(f"[{sender}]: {message}")
-            except:
+            except Exception:
                 pass
         if sender in self.active_connections:
             try:
                 await self.active_connections[sender].send_text(f"[You->{recipient}]: {message}")
-            except:
+            except Exception:
                 pass

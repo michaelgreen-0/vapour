@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect, Cookie
+from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect, Cookie, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from typing import Optional
 import json
-from ..services import manager
+from ..services import ConnectionManager
 
 router = APIRouter(prefix="/chat")
 templates = Jinja2Templates(directory="src/templates")
+manager = ConnectionManager()
 
 @router.get("/", response_class=HTMLResponse)
 async def chat_home(request: Request, user_id: Optional[str] = Cookie(None)):
@@ -25,16 +26,24 @@ async def conversation(request: Request, recipient_id: str, user_id: Optional[st
     })
 
 @router.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    await manager.connect(websocket, client_id)
+async def websocket_endpoint(
+    websocket: WebSocket, 
+    ):
+    user_id = websocket.cookies.get("user_id")
+
+    if not user_id:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    await manager.connect(websocket, user_id)
     try:
         while True:
             data = await websocket.receive_text()
             payload = json.loads(data)
             await manager.send_personal_message(
                 payload.get("message"), 
-                client_id, 
+                user_id, 
                 payload.get("target_user")
             )
     except (WebSocketDisconnect, json.JSONDecodeError):
-        manager.disconnect(client_id)
+        manager.disconnect(user_id)

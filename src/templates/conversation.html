@@ -22,7 +22,7 @@
     </div>
 
     <script>
-        var ws = new WebSocket("ws://" + window.location.host + "/ws/{{ user_id }}");
+        var ws = new WebSocket("ws://" + window.location.host + "/chat/ws/{{ user_id }}");
         var recipient = "{{ recipient_id }}";
         
         ws.onmessage = function(event) {
@@ -33,7 +33,7 @@
             var isRelevant = false;
             if (data.startsWith("[" + recipient + "]:")) isRelevant = true;
             if (data.startsWith("[You->" + recipient + "]:")) isRelevant = true;
-            if (data.includes("System")) isRelevant = true;
+            if (data.includes("System")) isRelevant = true; // this isn't relevant anymore but could be in the future
             
             if (isRelevant) {
                 var message = document.createElement('div');
