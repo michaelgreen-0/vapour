@@ -38,12 +38,11 @@ async def websocket_endpoint(
     await manager.connect(websocket, user_id)
     try:
         while True:
-            data = await websocket.receive_text()
-            payload = json.loads(data)
+            data = await websocket.receive_json()
             await manager.send_personal_message(
-                payload.get("message"), 
-                user_id, 
-                payload.get("target_user")
+                message=data,
+                sender=user_id,
+                recipient=data.get("target_user")
             )
     except (WebSocketDisconnect, json.JSONDecodeError):
         manager.disconnect(user_id)

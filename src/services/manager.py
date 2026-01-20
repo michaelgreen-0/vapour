@@ -13,14 +13,13 @@ class ConnectionManager:
         if user_id in self.active_connections:
             del self.active_connections[user_id]
 
-    async def send_personal_message(self, message: str, sender: str, recipient: str):
+    async def send_personal_message(self, message: dict, sender: str, recipient: str):
         if recipient in self.active_connections:
-            try:
-                await self.active_connections[recipient].send_text(f"[{sender}]: {message}")
-            except Exception:
-                pass
+            payload_for_recipient = message.copy()
+            payload_for_recipient['sender'] = sender
+            await self.active_connections[recipient].send_json(payload_for_recipient)
+
         if sender in self.active_connections:
-            try:
-                await self.active_connections[sender].send_text(f"[You->{recipient}]: {message}")
-            except Exception:
-                pass
+            payload_for_sender = message.copy()
+            payload_for_sender['recipient'] = recipient
+            await self.active_connections[sender].send_json(payload_for_sender)
