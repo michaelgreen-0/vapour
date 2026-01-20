@@ -36,7 +36,7 @@ async def login(
     
     if is_valid and user_id:
         challenges.pop(challenge_id, None)
-        response = RedirectResponse(url="/chat", status_code=303)
+        response = RedirectResponse(url="/chat/", status_code=303)
         response.set_cookie(key="user_id", value=user_id, httponly=True)
         return response
 
