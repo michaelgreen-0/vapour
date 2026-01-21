@@ -8,6 +8,8 @@ Many online communities rely on PGP signatures and the ownership of the private 
 
 That is, as long as the private key is not leaked, you can be confident that who you are chatting with is the rightful owner of the public/private PGP key pair.
 
+_Ephemeral PGP Chatter_ also uses a Diffie-Hellman key exchange to enable end-to-end encryption.
+
 ## How it Works
 
 Users use their PGP public key as an effective username for logging in. When messaging others, you use the keyid of their public key.
