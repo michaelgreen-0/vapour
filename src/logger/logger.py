@@ -1,10 +1,10 @@
 import logging
 import sys
-from pythonjsonlogger import jsonlogger
+from pythonjsonlogger import json
 from datetime import datetime, timezone
 
 
-class CustomJsonFormatter(jsonlogger.JsonFormatter):
+class CustomJsonFormatter(json.JsonFormatter):
     def add_fields(self, log_record, record, message_dict):
         super().add_fields(log_record, record, message_dict)
         log_record["timestamp"] = datetime.now(timezone.utc).strftime(
