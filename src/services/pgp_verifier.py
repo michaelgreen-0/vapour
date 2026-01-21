@@ -1,5 +1,4 @@
 import pgpy
-import traceback
 from ..logger import Logger
 
 def verify_login(public_key_str, clearsigned_str, expected_challenge):
@@ -35,7 +34,5 @@ def verify_login(public_key_str, clearsigned_str, expected_challenge):
         return False, None
 
     except Exception as e:
-        logger.error(f"Exception: {e}")
-        
-        traceback.print_exc()
+        logger.error(f"Exception: {e}", exc_info=True)
         return False, None

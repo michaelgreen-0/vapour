@@ -1,12 +1,12 @@
 import logging
 import sys
-from pythonjsonlogger import json
-from datetime import datetime
+from pythonjsonlogger import jsonlogger
+from datetime import datetime, timezone
 
-class CustomJsonFormatter(json.JsonFormatter):
+class CustomJsonFormatter(jsonlogger.JsonFormatter):
     def add_fields(self, log_record, record, message_dict):
         super().add_fields(log_record, record, message_dict)
-        log_record["timestamp"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        log_record["timestamp"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         log_record["level"] = record.levelname
 
 
@@ -17,12 +17,14 @@ class Logger:
     log_handler.setFormatter(CustomJsonFormatter())
     logger.addHandler(log_handler)
 
-    def info(self, msg, extra=None):
+    def info(self, msg, extra=None, **kwargs):
         if extra is None:
             extra = {}
-        self.logger.info(msg, extra=extra)
+        kwargs.setdefault('stacklevel', 2)
+        self.logger.info(msg, extra=extra, **kwargs)
     
-    def error(self, msg, extra=None):
+    def error(self, msg, extra=None, **kwargs):
         if extra is None:
             extra = {}
-        self.logger.error(msg, extra=extra)
+        kwargs.setdefault('stacklevel', 2)
+        self.logger.error(msg, extra=extra, **kwargs)
