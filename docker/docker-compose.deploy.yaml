@@ -1,0 +1,50 @@
+services:
+  ephemeral-chatter:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    container_name: ephemeral-chatter
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    networks:
+      - app-network
+
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    container_name: caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - app-network
+
+  tor:
+    image: goldy/tor-hidden-service
+    container_name: tor
+    links:
+      - caddy
+    environment:
+      CADDY_HOST: caddy
+      CADDY_PORTS: 80:80
+    volumes:
+      - ./tor-keys:/var/lib/tor
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
