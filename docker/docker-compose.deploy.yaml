@@ -16,23 +16,6 @@ services:
     networks:
       - app-network
 
-  tor:
-    image: goldy/tor-hidden-service
-    container_name: tor
-    links:
-      - caddy
-    environment:
-      CADDY_HOST: caddy
-      CADDY_PORTS: 80:80
-    volumes:
-      - ./tor-keys:/var/lib/tor
-    networks:
-      - app-network
-
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  caddy_data:
-  caddy_config:
