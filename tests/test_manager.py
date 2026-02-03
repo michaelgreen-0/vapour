@@ -4,10 +4,6 @@ import os
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 
-sys.modules['pgpy'] = MagicMock()
-sys.modules['pgpy.pgp'] = MagicMock()
-sys.modules['pgpy.constants'] = MagicMock()
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.services.manager import ConnectionManager
 
