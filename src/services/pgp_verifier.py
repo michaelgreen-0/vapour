@@ -33,7 +33,7 @@ def verify_login(public_key_str, clearsigned_str, expected_challenge):
         logger.info(f"Verification result: {verification}")
 
         if verification:
-            return True, str(key.fingerprint.keyid)
+            return True, str(key.fingerprint) # Return the full fingerprint instead of the keyid
         return False, None
 
     except Exception as e:

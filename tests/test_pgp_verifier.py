@@ -34,9 +34,9 @@ class TestPgpVerifier(unittest.TestCase):
         public_key_str = str(self.key.pubkey)
         clearsigned_str = str(self.clearsigned_message)
 
-        is_valid, key_id = verify_login(public_key_str, clearsigned_str, self.challenge)
+        is_valid, user_id = verify_login(public_key_str, clearsigned_str, self.challenge)
 
-        self.assertEqual(key_id, str(self.key.fingerprint.keyid))
+        self.assertEqual(user_id, str(self.key.fingerprint))
         self.assertTrue(is_valid)
 
     @patch('src.services.pgp_verifier.Logger')
@@ -44,20 +44,20 @@ class TestPgpVerifier(unittest.TestCase):
         public_key_str = str(self.key.pubkey)
         clearsigned_str = str(self.clearsigned_message)
 
-        is_valid, key_id = verify_login(public_key_str, clearsigned_str, "wrong-challenge")
+        is_valid, user_id = verify_login(public_key_str, clearsigned_str, "wrong-challenge")
 
         self.assertFalse(is_valid)
-        self.assertIsNone(key_id)
+        self.assertIsNone(user_id)
 
     @patch('src.services.pgp_verifier.Logger')
     def test_verify_login_no_signature(self, mock_logger):
         public_key_str = str(self.key.pubkey)
         clearsigned_str = self.challenge
         
-        is_valid, key_id = verify_login(public_key_str, clearsigned_str, self.challenge)
+        is_valid, user_id = verify_login(public_key_str, clearsigned_str, self.challenge)
 
         self.assertFalse(is_valid)
-        self.assertIsNone(key_id)
+        self.assertIsNone(user_id)
     
     @patch('src.services.pgp_verifier.Logger')
     def test_verify_login_signer_id_not_found(self, mock_logger):
@@ -65,10 +65,10 @@ class TestPgpVerifier(unittest.TestCase):
         public_key_str = str(wrong_key.pubkey)
         clearsigned_str = str(self.clearsigned_message)
 
-        is_valid, key_id = verify_login(public_key_str, clearsigned_str, self.challenge)
+        is_valid, user_id = verify_login(public_key_str, clearsigned_str, self.challenge)
 
         self.assertFalse(is_valid)
-        self.assertIsNone(key_id)
+        self.assertIsNone(user_id)
 
     @patch('src.services.pgp_verifier.Logger')
     def test_verify_login_invalid_signature(self, mock_logger):
@@ -77,17 +77,17 @@ class TestPgpVerifier(unittest.TestCase):
         # Tamper with the message
         clearsigned_str = clearsigned_str.replace(self.challenge, "tampered-challenge")
 
-        is_valid, key_id = verify_login(public_key_str, clearsigned_str, self.challenge)
+        is_valid, user_id = verify_login(public_key_str, clearsigned_str, self.challenge)
 
         self.assertFalse(is_valid)
-        self.assertIsNone(key_id)
+        self.assertIsNone(user_id)
 
     @patch('src.services.pgp_verifier.Logger')
     def test_verify_login_exception(self, mock_logger):
-        is_valid, key_id = verify_login("invalid-key", "invalid-message", "challenge")
+        is_valid, user_id = verify_login("invalid-key", "invalid-message", "challenge")
 
         self.assertFalse(is_valid)
-        self.assertIsNone(key_id)
+        self.assertIsNone(user_id)
 
 
 if __name__ == '__main__':
