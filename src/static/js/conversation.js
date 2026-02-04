@@ -1,5 +1,6 @@
 window.startChat = function(userId, recipientId) {
-    const ws = new WebSocket("ws://" + window.location.host + "/chat/ws/" + userId);
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const ws = new WebSocket(wsProtocol + window.location.host + "/chat/ws/" + userId);
     const recipient = recipientId;
     const messagesDiv = document.getElementById('messages');
     const messageInput = document.getElementById('messageText');
