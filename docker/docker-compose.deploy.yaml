@@ -1,9 +1,9 @@
 services:
-  ephemeral-chatter:
+  vapour:
     build:
       context: ..
       dockerfile: docker/Dockerfile.app
-    container_name: ephemeral-chatter
+    container_name: vapour
     ports:
       - "127.0.0.1:5000:5000"
     depends_on:

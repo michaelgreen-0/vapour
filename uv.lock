@@ -233,7 +233,7 @@ wheels = [
 ]
 
 [[package]]
-name = "ephemeral-chatter"
+name = "vapour"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
