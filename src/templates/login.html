@@ -1,17 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>PGP Login</title>
+    <title>Vapour</title>
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        textarea { width: 100%; height: 150px; font-family: monospace; }
-        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
-        .challenge { background: #f0f0f0; padding: 10px; font-family: monospace; font-weight: bold; }
-        .error { color: red; font-weight: bold; }
+        body { 
+            font-family: sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background-color: #222; 
+            color: #eee;
+        }
+        textarea { 
+            width: 100%; 
+            height: 150px; 
+            font-family: monospace; 
+            background-color: #333;
+            color: #eee;
+            border: 1px solid #444;
+        }
+        .box { 
+            border: 1px solid #444; 
+            padding: 15px; 
+            margin-bottom: 20px; 
+            border-radius: 5px; 
+            background-color: #333;
+        }
+        .challenge { 
+            background: #444; 
+            padding: 10px; 
+            font-family: monospace; 
+            font-weight: bold; 
+        }
+        .error { 
+            color: #ff8888; 
+            font-weight: bold; 
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #555;
+            color: #eee;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <h1>PGP Chat Login</h1>
+    <h1>Vapour Login</h1>
     
     {% if error %}
     <div class="error">{{ error }}</div>
@@ -33,7 +69,7 @@
         <textarea name="signature" placeholder="-----BEGIN PGP SIGNED MESSAGE-----..."></textarea>
         
         <br><br>
-        <button type="submit" style="padding: 10px 20px;">Login</button>
+        <button type="submit">Login</button>
     </form>
 </body>
 </html>

@@ -1,15 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Chat with {{ recipient_id }}</title>
+    <title>Vapour</title>
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        #messages { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; }
-        #input-area { display: flex; gap: 10px; }
-        #messageText { flex-grow: 1; padding: 10px; }
-        button { padding: 10px 20px; }
-        .system-message { color: #888; font-style: italic; }
-        .error-message { color: #ff0000; font-weight: bold; }
+        body { 
+            font-family: sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background-color: #222; 
+            color: #eee;
+        }
+        #messages { 
+            border: 1px solid #444; 
+            height: 400px; 
+            overflow-y: scroll; 
+            padding: 10px; 
+            margin-bottom: 10px; 
+            background-color: #333;
+        }
+        #input-area { 
+            display: flex; 
+            gap: 10px; 
+        }
+        #messageText { 
+            flex-grow: 1; 
+            padding: 10px; 
+            background-color: #333;
+            color: #eee;
+            border: 1px solid #444;
+        }
+        button { 
+            padding: 10px 20px;
+            background-color: #555;
+            color: #eee;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .system-message { 
+            color: #aaa; 
+            font-style: italic; 
+        }
+        .error-message { 
+            color: #ff8888; 
+            font-weight: bold; 
+        }
+        a {
+            color: #8af;
+        }
     </style>
 </head>
 <body>
