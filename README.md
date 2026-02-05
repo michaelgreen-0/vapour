@@ -4,6 +4,10 @@
 
 Use your PGP public key as a way to authenticate into this encrypted messaging service. There is no client nor server side handling of private keys. The server does not store messages.
 
+Clearnet - [https://vapour.chat](https://vapour.chat)
+
+Onion Service - [http://2erryx4wxgsk76vby34bmu3zi6i4dfkf6dxndfqplvesmlhcy5i2nzad.onion](http://2erryx4wxgsk76vby34bmu3zi6i4dfkf6dxndfqplvesmlhcy5i2nzad.onion)
+
 ## Description
 
 Many online communities rely on PGP signatures and the ownership of the private key as a means to prove who the sender of a message is.
