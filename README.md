@@ -1,3 +1,5 @@
+<img width="2487" height="1259" alt="vapour" src="https://github.com/user-attachments/assets/a1194c10-8121-430b-ab04-2bd271240211" />
+
 # Vapour
 
 Use your PGP public key as a way to authenticate into this encrypted messaging service. There is no client nor server side handling of private keys. The server does not store messages.
