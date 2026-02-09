@@ -1,9 +1,31 @@
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
+import logging
+from .logger import MaskingFilter
 from .routes import auth, chat
 
-app = FastAPI()
+logging.getLogger().addFilter(MaskingFilter())
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    mask_filter = MaskingFilter()
+    target_loggers = [
+        "",
+        "uvicorn",
+        "uvicorn.access",
+        "uvicorn.error",
+    ]
+    for name in target_loggers:
+        logger = logging.getLogger(name)
+        logger.addFilter(mask_filter)
+        logger.propagate = True
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="src/static"), name="static")
 

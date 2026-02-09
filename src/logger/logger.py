@@ -1,7 +1,25 @@
 import logging
 import sys
+import regex as re
 from pythonjsonlogger import json
 from datetime import datetime, timezone
+
+
+class MaskingFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        pattern = r"[A-Z0-9]{20,}"
+
+        if isinstance(record.msg, str):
+            record.msg = re.sub(pattern, "[MASKED]", record.msg)
+
+        if record.args:
+            new_args = list(record.args)
+            for i, arg in enumerate(new_args):
+                if isinstance(arg, str):
+                    new_args[i] = re.sub(pattern, "[MASKED]", arg)
+            record.args = tuple(new_args)
+
+        return True
 
 
 class CustomJsonFormatter(json.JsonFormatter):
