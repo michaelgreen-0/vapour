@@ -1,5 +1,4 @@
 import logging
-import sys
 import regex as re
 from pythonjsonlogger import json
 from datetime import datetime, timezone
@@ -8,17 +7,14 @@ from datetime import datetime, timezone
 class MaskingFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         pattern = r"[A-Z0-9]{20,}"
-
         if isinstance(record.msg, str):
             record.msg = re.sub(pattern, "[MASKED]", record.msg)
-
         if record.args:
             new_args = list(record.args)
             for i, arg in enumerate(new_args):
                 if isinstance(arg, str):
                     new_args[i] = re.sub(pattern, "[MASKED]", arg)
             record.args = tuple(new_args)
-
         return True
 
 
@@ -31,21 +27,34 @@ class CustomJsonFormatter(json.JsonFormatter):
         log_record["level"] = record.levelname
 
 
-class Logger:
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-    log_handler = logging.StreamHandler(sys.stdout)
-    log_handler.setFormatter(CustomJsonFormatter())
-    logger.addHandler(log_handler)
-
-    def info(self, msg, extra=None, **kwargs):
-        if extra is None:
-            extra = {}
-        kwargs.setdefault("stacklevel", 2)
-        self.logger.info(msg, extra=extra, **kwargs)
-
-    def error(self, msg, extra=None, **kwargs):
-        if extra is None:
-            extra = {}
-        kwargs.setdefault("stacklevel", 2)
-        self.logger.error(msg, extra=extra, **kwargs)
+LOGGING_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": CustomJsonFormatter,
+        },
+    },
+    "filters": {
+        "masking": {
+            "()": MaskingFilter,
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": "json",
+            "filters": ["masking"],
+        },
+    },
+    "loggers": {
+        "uvicorn": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "uvicorn.access": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "": {"handlers": ["console"], "level": "INFO"},
+    },
+}

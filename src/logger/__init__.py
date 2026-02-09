@@ -1,3 +1,3 @@
-from .logger import Logger, MaskingFilter
+from .logger import LOGGING_CONFIG
 
-__all__ = ["Logger", "MaskingFilter"]
+__all__ = ["LOGGING_CONFIG"]

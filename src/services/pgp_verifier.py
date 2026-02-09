@@ -1,9 +1,9 @@
 import pgpy
-from ..logger import Logger
+import logging
 
 
 def verify_login(public_key_str, clearsigned_str, expected_challenge):
-    logger = Logger()
+    logger = logging.getLogger(__name__)
     try:
         clearsigned_str = (
             clearsigned_str.replace("\u202f", " ").replace("\r\n", "\n").strip()
