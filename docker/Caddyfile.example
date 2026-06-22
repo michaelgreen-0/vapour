@@ -1,0 +1,94 @@
+# Vapour reverse-proxy template for Caddy.
+#
+# Copy this to ./Caddyfile (which is gitignored) and edit the domain.
+# The app is published on 127.0.0.1:5000 by docker-compose.deploy.yaml; Caddy
+# terminates TLS for the clearnet host and forwards to it.
+#
+# Per-IP rate limiting needs the caddy-ratelimit plugin, which is NOT in the
+# default Caddy build. Build a custom binary with it:
+#
+#   xcaddy build --with github.com/mholt/caddy-ratelimit
+#
+# (Verify directive syntax against that plugin's README for your version.)
+# If you don't want the plugin, delete the rate_limit blocks below and rely on
+# the in-app limiter plus the kernel SYN/conntrack hardening noted at the end.
+
+{
+	# rate_limit is a non-standard directive, so give it an explicit order.
+	order rate_limit before reverse_proxy
+
+	# Server-wide timeouts blunt slowloris-style attacks that hold sockets open.
+	servers {
+		timeouts {
+			read_header 5s
+			read_body   10s
+			idle        30s
+		}
+	}
+}
+
+vapour.chat {
+	encode gzip
+
+	# PGP key + clearsigned challenge are a few KB; cap bodies hard.
+	request_body {
+		max_size 64KB
+	}
+
+	# Security headers. NOTE: conversation.html uses an inline <script>, so a
+	# strict script-src would break it -- 'unsafe-inline' is here until that
+	# inline call is moved into a .js file, then tighten to 'self'.
+	header {
+		-Server
+		Referrer-Policy "no-referrer"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'"
+	}
+
+	# Stricter budget for the expensive auth endpoint...
+	@login path /login
+	rate_limit @login {
+		zone login {
+			key    {remote_host}
+			events 20
+			window 1m
+		}
+	}
+
+	# ...and a general per-IP ceiling for everything else.
+	rate_limit {
+		zone general {
+			key    {remote_host}
+			events 120
+			window 1m
+		}
+	}
+
+	# Caddy proxies WebSockets automatically (no extra config needed).
+	reverse_proxy 127.0.0.1:5000 {
+		# Make X-Forwarded-For authoritative: overwrite any client-supplied
+		# value with the real peer so the app's per-IP limiter can't be spoofed.
+		header_up X-Forwarded-For {remote_host}
+	}
+}
+
+# ── Onion service ────────────────────────────────────────────────────────────
+# Point Tor straight at the app and skip Caddy entirely (onion already provides
+# transport encryption), in torrc:
+#
+#   HiddenServiceDir /var/lib/tor/vapour/
+#   HiddenServicePort 80 127.0.0.1:5000
+#
+# Do NOT apply per-IP rate limiting to onion traffic: every visitor arrives via
+# the local Tor daemon and shares one address, so a per-IP rule would lock them
+# all out at once. The onion DoS defense is Tor's onion-service proof-of-work
+# (HiddenServicePoWDefensesEnabled 1) plus intro-point rate limiting -- enable
+# those in torrc. The in-app limiter already exempts non-public IPs to match.
+#
+# ── Host kernel hardening (sysctl) ───────────────────────────────────────────
+#   net.ipv4.tcp_syncookies = 1
+#   net.ipv4.tcp_synack_retries = 2
+#   net.core.somaxconn = 1024
+# Volumetric (L3/L4) floods still need upstream scrubbing capacity; a single
+# host cannot absorb a saturated uplink no matter how it's configured.
