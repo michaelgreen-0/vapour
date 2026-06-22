@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.concurrency import run_in_threadpool
 import uuid
 import redis
-from ..services import verify_login, client_ip, is_rate_limited
+from ..services import verify_login, client_ip, is_rate_limited, sign_user_id
 from ..env import CHALLENGE_LIFETIME, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
 
 router = APIRouter()
@@ -65,7 +65,15 @@ async def login(
     if is_valid and user_id:
         redis_client.delete(challenge_id)
         response = RedirectResponse(url="/chat/", status_code=303)
-        response.set_cookie(key="user_id", value=user_id, httponly=True)
+        response.set_cookie(
+            key="user_id",
+            value=sign_user_id(user_id),
+            httponly=True,
+            # https on clearnet (via Caddy's X-Forwarded-Proto); the onion
+            # service is plain http, where a Secure cookie would never be sent.
+            secure=request.url.scheme == "https",
+            samesite="strict",
+        )
         return response
 
     return templates.TemplateResponse(
