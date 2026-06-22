@@ -4,10 +4,23 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.app
     container_name: vapour
+    env_file:
+      - ../.env
     ports:
-      - 5000:5000
+      - "5000:5000"
+    # Override the production CMD to enable hot reload, and mount the source
+    # so edits on the host are picked up without a rebuild.
+    command: ["uvicorn", "src:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
+    volumes:
+      - ../src:/code/src
     depends_on:
       - redis
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
+    # Mirror the deploy auth behaviour: with an empty REDIS_PASSWORD this is a
+    # passwordless dev instance; set one in .env and both sides require it.
+    command: >
+      sh -c 'exec redis-server --requirepass "$$REDIS_PASSWORD"'
+    env_file:
+      - ../.env

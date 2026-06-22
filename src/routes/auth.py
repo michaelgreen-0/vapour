@@ -4,12 +4,17 @@ from fastapi.templating import Jinja2Templates
 import uuid
 import redis
 from ..services import verify_login
-from ..env import CHALLENGE_LIFETIME, REDIS_HOST, REDIS_PORT
+from ..env import CHALLENGE_LIFETIME, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
 
 router = APIRouter()
 templates = Jinja2Templates(directory="src/templates")
 
-redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+redis_client = redis.Redis(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    password=REDIS_PASSWORD or None,
+    decode_responses=True,
+)
 
 
 @router.get("/", response_class=HTMLResponse)
