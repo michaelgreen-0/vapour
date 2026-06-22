@@ -34,7 +34,7 @@ class TestPgpVerifier(unittest.TestCase):
             f"{str(signature)}"
         )
 
-    @patch("src.services.pgp_verifier.Logger")
+    @patch("src.services.pgp_verifier.logging")
     def test_verify_login_success(self, mock_logger):
         public_key_str = str(self.key.pubkey)
         clearsigned_str = str(self.clearsigned_message)
@@ -46,7 +46,7 @@ class TestPgpVerifier(unittest.TestCase):
         self.assertEqual(user_id, str(self.key.fingerprint))
         self.assertTrue(is_valid)
 
-    @patch("src.services.pgp_verifier.Logger")
+    @patch("src.services.pgp_verifier.logging")
     def test_verify_login_challenge_mismatch(self, mock_logger):
         public_key_str = str(self.key.pubkey)
         clearsigned_str = str(self.clearsigned_message)
@@ -58,7 +58,7 @@ class TestPgpVerifier(unittest.TestCase):
         self.assertFalse(is_valid)
         self.assertIsNone(user_id)
 
-    @patch("src.services.pgp_verifier.Logger")
+    @patch("src.services.pgp_verifier.logging")
     def test_verify_login_no_signature(self, mock_logger):
         public_key_str = str(self.key.pubkey)
         clearsigned_str = self.challenge
@@ -70,7 +70,7 @@ class TestPgpVerifier(unittest.TestCase):
         self.assertFalse(is_valid)
         self.assertIsNone(user_id)
 
-    @patch("src.services.pgp_verifier.Logger")
+    @patch("src.services.pgp_verifier.logging")
     def test_verify_login_signer_id_not_found(self, mock_logger):
         wrong_key = pgpy.PGPKey.new(
             pgpy.constants.PubKeyAlgorithm.RSAEncryptOrSign, 2048
@@ -85,7 +85,7 @@ class TestPgpVerifier(unittest.TestCase):
         self.assertFalse(is_valid)
         self.assertIsNone(user_id)
 
-    @patch("src.services.pgp_verifier.Logger")
+    @patch("src.services.pgp_verifier.logging")
     def test_verify_login_invalid_signature(self, mock_logger):
         public_key_str = str(self.key.pubkey)
         clearsigned_str = str(self.clearsigned_message)
@@ -99,7 +99,7 @@ class TestPgpVerifier(unittest.TestCase):
         self.assertFalse(is_valid)
         self.assertIsNone(user_id)
 
-    @patch("src.services.pgp_verifier.Logger")
+    @patch("src.services.pgp_verifier.logging")
     def test_verify_login_exception(self, mock_logger):
         is_valid, user_id = verify_login("invalid-key", "invalid-message", "challenge")
 
