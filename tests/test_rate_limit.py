@@ -4,7 +4,11 @@ import unittest
 from types import SimpleNamespace
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from src.services.rate_limit import is_rate_limited, client_ip
+from src.services.rate_limit import (
+    is_rate_limited,
+    is_globally_rate_limited,
+    client_ip,
+)
 
 
 class FakeRedis:
@@ -57,6 +61,30 @@ class TestRateLimit(unittest.TestCase):
         self.assertFalse(is_rate_limited(r, "8.8.8.8", "index", limit=1, window=60))
         # different scope, fresh budget
         self.assertFalse(is_rate_limited(r, "8.8.8.8", "login", limit=1, window=60))
+
+    def test_global_limit_blocks_past_limit_regardless_of_ip(self):
+        r = FakeRedis()
+        # No IP argument: this must trip purely on aggregate volume, which is
+        # what defends onion traffic that all shares one exempt address.
+        allowed = [
+            is_globally_rate_limited(r, "login", limit=3, window=60)
+            for _ in range(3)
+        ]
+        self.assertEqual(allowed, [False, False, False])
+        self.assertTrue(is_globally_rate_limited(r, "login", limit=3, window=60))
+
+    def test_global_limit_independent_of_per_ip(self):
+        r = FakeRedis()
+        # Private IPs are exempt from the per-IP limiter but must still count
+        # toward the global ceiling.
+        for _ in range(2):
+            self.assertFalse(is_rate_limited(r, "127.0.0.1", "login", 1, 60))
+        allowed = [
+            is_globally_rate_limited(r, "login", limit=2, window=60)
+            for _ in range(2)
+        ]
+        self.assertEqual(allowed, [False, False])
+        self.assertTrue(is_globally_rate_limited(r, "login", limit=2, window=60))
 
     def test_client_ip_reads_request(self):
         req = SimpleNamespace(client=SimpleNamespace(host="1.2.3.4"))

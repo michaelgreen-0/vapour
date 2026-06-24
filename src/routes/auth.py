@@ -4,7 +4,13 @@ from fastapi.templating import Jinja2Templates
 from fastapi.concurrency import run_in_threadpool
 import uuid
 import redis
-from ..services import verify_login, client_ip, is_rate_limited, sign_user_id
+from ..services import (
+    verify_login,
+    client_ip,
+    is_rate_limited,
+    is_globally_rate_limited,
+    sign_user_id,
+)
 from ..env import (
     CHALLENGE_LIFETIME,
     REDIS_HOST,
@@ -51,7 +57,11 @@ async def login(
     signature: str = Form(...),
     challenge_id: str = Form(...),
 ):
-    if is_rate_limited(redis_client, client_ip(request), "login", limit=30, window=60):
+    # Per-IP limit (clearnet) plus a server-wide ceiling that also covers
+    # onion traffic, where every client shares the exempt loopback address.
+    if is_rate_limited(
+        redis_client, client_ip(request), "login", limit=30, window=60
+    ) or is_globally_rate_limited(redis_client, "login", limit=300, window=60):
         raise HTTPException(status_code=429, detail="Too Many Requests")
 
     if len(public_key) > MAX_PGP_FIELD or len(signature) > MAX_PGP_FIELD:

@@ -41,6 +41,27 @@ def is_rate_limited(
         return False
 
     key = f"rl:{scope}:{ip}:{int(time.time()) // window}"
+    return _incr_and_check(redis_client, key, limit, window)
+
+
+def is_globally_rate_limited(
+    redis_client, scope: str, limit: int, window: int
+) -> bool:
+    """Fixed-window rate limit that is NOT keyed on client IP.
+
+    The per-IP limiter exempts private/loopback addresses, which means all
+    onion traffic (arriving via the local Tor daemon) shares one exempt
+    address and is effectively unlimited. For expensive endpoints like the
+    PGP-verifying /login that is a CPU-exhaustion lever. This applies a single
+    server-wide ceiling for ``scope`` so onion floods get shed (429) before
+    they saturate the verification threadpool, while normal usage stays well
+    under the cap. It complements -- does not replace -- the per-IP limiter.
+    """
+    key = f"rl:global:{scope}:{int(time.time()) // window}"
+    return _incr_and_check(redis_client, key, limit, window)
+
+
+def _incr_and_check(redis_client, key: str, limit: int, window: int) -> bool:
     count = redis_client.incr(key)
     if count == 1:
         # First hit in this window: set the key to expire so buckets don't
