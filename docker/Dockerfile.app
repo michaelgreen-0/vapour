@@ -33,6 +33,9 @@ USER appuser
 #    the port were ever exposed; pinning to loopback removes that footgun.
 #  - --limit-concurrency sheds load (503) instead of unbounded queueing.
 #  - --timeout-keep-alive trims idle keep-alive sockets (slowloris).
+#  - --no-server-header: suppress Uvicorn's Server header so the app middleware
+#    is the sole source of a generic one (no software/version advertised).
 CMD ["uvicorn", "src:app", "--host", "0.0.0.0", "--port", "5000", \
      "--proxy-headers", "--forwarded-allow-ips", "127.0.0.1", \
+     "--no-server-header", \
      "--limit-concurrency", "200", "--timeout-keep-alive", "5"]

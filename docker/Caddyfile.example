@@ -30,21 +30,17 @@
 vapour.chat {
 	encode gzip
 
-	# PGP key + clearsigned challenge are a few KB; cap bodies hard.
+	# PGP key + clearsigned challenge are a few KB; cap bodies hard. The app
+	# enforces the same 64KB cap itself (so onion traffic is covered too); this
+	# is just an earlier, cheaper rejection at the edge.
 	request_body {
 		max_size 64KB
 	}
 
-	# Security headers. NOTE: conversation.html uses an inline <script>, so a
-	# strict script-src would break it -- 'unsafe-inline' is here until that
-	# inline call is moved into a .js file, then tighten to 'self'.
-	header {
-		-Server
-		Referrer-Policy "no-referrer"
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'"
-	}
+	# Security headers (Referrer-Policy, X-Content-Type-Options, X-Frame-Options,
+	# a strict Content-Security-Policy, and a generic Server value) are now set by
+	# the application middleware so they apply uniformly to clearnet AND onion.
+	# They are intentionally NOT duplicated here to avoid conflicting headers.
 
 	# Stricter budget for the expensive auth endpoint...
 	@login path /login
@@ -79,6 +75,11 @@ vapour.chat {
 #
 #   HiddenServiceDir /var/lib/tor/vapour/
 #   HiddenServicePort 80 127.0.0.1:5000
+#
+# The app's own middleware applies the security headers and the 64KB body cap, so
+# onion traffic is not losing those by bypassing Caddy. What it does skip is
+# Caddy's edge rate limiting -- see the in-app global limiter on /login, plus the
+# Tor onion-service PoW noted below.
 #
 # Do NOT apply per-IP rate limiting to onion traffic: every visitor arrives via
 # the local Tor daemon and shares one address, so a per-IP rule would lock them

@@ -2,31 +2,7 @@
 <html>
 <head>
     <title>Vapour</title>
-    <style>
-        body { 
-            font-family: sans-serif; 
-            max-width: 800px; 
-            margin: 0 auto; 
-            padding: 20px; 
-            background-color: #222; 
-            color: #eee;
-        }
-        input { 
-            padding: 10px; 
-            width: 300px; 
-            background-color: #333;
-            color: #eee;
-            border: 1px solid #444;
-        }
-        button { 
-            padding: 10px 20px;
-            background-color: #555;
-            color: #eee;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
     <h1>Start a New Chat</h1>
@@ -37,16 +13,9 @@
 
     <div>
         <input type="text" id="recipientId" placeholder="Enter Recipient ID" />
-        <button onclick="startChat()">Start Chat</button>
+        <button id="startChatButton">Start Chat</button>
     </div>
 
-    <script>
-        function startChat() {
-            var recipient = document.getElementById("recipientId").value.trim();
-            if(recipient) {
-                window.location.href = "/chat/" + encodeURIComponent(recipient);
-            }
-        }
-    </script>
+    <script src="/static/js/chat.js"></script>
 </body>
 </html>

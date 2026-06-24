@@ -2,67 +2,7 @@
 <html>
 <head>
     <title>Vapour</title>
-    <style>
-        body { 
-            font-family: sans-serif; 
-            max-width: 800px; 
-            margin: 0 auto; 
-            padding: 20px; 
-            background-color: #222; 
-            color: #eee;
-        }
-        #messages { 
-            border: 1px solid #444; 
-            height: 400px; 
-            overflow-y: scroll; 
-            padding: 10px; 
-            margin-bottom: 10px; 
-            background-color: #333;
-        }
-        #input-area { 
-            display: flex; 
-            gap: 10px; 
-        }
-        #messageText { 
-            flex-grow: 1; 
-            padding: 10px; 
-            background-color: #333;
-            color: #eee;
-            border: 1px solid #444;
-        }
-        button { 
-            padding: 10px 20px;
-            background-color: #555;
-            color: #eee;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .system-message { 
-            color: #aaa; 
-            font-style: italic; 
-        }
-        .error-message { 
-            color: #ff8888; 
-            font-weight: bold; 
-        }
-        .safety-number {
-            display: inline-block;
-            margin: 8px 0 12px;
-            padding: 8px 10px;
-            border: 1px solid #666;
-            border-radius: 4px;
-            background: #2a2a2a;
-            color: #f2f2f2;
-            font-family: monospace;
-            font-size: 1.1rem;
-            letter-spacing: 0;
-            user-select: all;
-        }
-        a {
-            color: #8af;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
     <h1>Chat with {{ recipient_id }}</h1>
@@ -76,9 +16,8 @@
         <button id="sendButton" disabled>Send</button>
     </div>
 
-    <script src="/static/js/conversation.js"></script>
-    <script>
-        startChat("{{ user_id }}", "{{ recipient_id }}");
-    </script>
+    <script src="/static/js/conversation.js"
+            data-user-id="{{ user_id }}"
+            data-recipient-id="{{ recipient_id }}"></script>
 </body>
 </html>

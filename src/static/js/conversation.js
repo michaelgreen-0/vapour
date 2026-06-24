@@ -1,3 +1,9 @@
+// Captured during this script's synchronous execution so we can read the
+// data-* attributes the template set on the <script> tag. Passing user/recipient
+// via attributes (instead of an inline script call) lets the page run under a
+// strict script-src 'self' Content-Security-Policy.
+const VAPOUR_SCRIPT = document.currentScript;
+
 window.startChat = function(userId, recipientId) {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
     const ws = new WebSocket(wsProtocol + window.location.host + "/chat/ws/" + userId);
@@ -258,3 +264,8 @@ window.startChat = function(userId, recipientId) {
         }
     });
 };
+
+// Auto-start using the identifiers the template provided via data-* attributes.
+if (VAPOUR_SCRIPT && VAPOUR_SCRIPT.dataset.userId && VAPOUR_SCRIPT.dataset.recipientId) {
+    window.startChat(VAPOUR_SCRIPT.dataset.userId, VAPOUR_SCRIPT.dataset.recipientId);
+}
