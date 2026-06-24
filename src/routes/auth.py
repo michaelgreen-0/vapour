@@ -35,41 +35,103 @@ redis_client = redis.Redis(
 MAX_PGP_FIELD = 16 * 1024
 
 
+def _issue_challenge() -> tuple[str, str]:
+    """Mint a fresh single-use challenge and store it in Redis with a TTL."""
+    challenge_id = str(uuid.uuid4())
+    challenge = f"Verification Challenge: {challenge_id}"
+    redis_client.setex(name=challenge_id, time=CHALLENGE_LIFETIME, value=challenge)
+    return challenge, challenge_id
+
+
+def _render_login(
+    request: Request,
+    challenge: str,
+    challenge_id: str,
+    error: str | None = None,
+    status_code: int = 200,
+):
+    return templates.TemplateResponse(
+        "login.html",
+        {
+            "request": request,
+            "challenge": challenge,
+            "challenge_id": challenge_id,
+            "error": error,
+        },
+        status_code=status_code,
+    )
+
+
+def _challenge_to_show(expected_challenge, challenge_id) -> tuple[str, str]:
+    """Reuse the still-valid challenge, or mint a fresh one if it's gone."""
+    if expected_challenge:
+        return expected_challenge, challenge_id
+    return _issue_challenge()
+
+
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     if is_rate_limited(redis_client, client_ip(request), "index", limit=60, window=60):
         raise HTTPException(status_code=429, detail="Too Many Requests")
 
-    challenge_id = str(uuid.uuid4())
-    challenge = f"Verification Challenge: {challenge_id}"
-    redis_client.setex(name=challenge_id, time=CHALLENGE_LIFETIME, value=challenge)
-
-    return templates.TemplateResponse(
-        "login.html",
-        {"request": request, "challenge": challenge, "challenge_id": challenge_id},
-    )
+    challenge, challenge_id = _issue_challenge()
+    return _render_login(request, challenge, challenge_id)
 
 
 @router.post("/login")
 async def login(
     request: Request,
-    public_key: str = Form(...),
-    signature: str = Form(...),
-    challenge_id: str = Form(...),
+    # Defaulted (not required) so empty/missing fields reach our own validation
+    # and render a friendly message, instead of FastAPI's raw 422 JSON dump.
+    public_key: str = Form(""),
+    signature: str = Form(""),
+    challenge_id: str = Form(""),
 ):
-    # Per-IP limit (clearnet) plus a server-wide ceiling that also covers
-    # onion traffic, where every client shares the exempt loopback address.
+    # Per-IP limit (clearnet) plus a server-wide ceiling that also covers onion
+    # traffic, where every client shares the exempt loopback address.
     if is_rate_limited(
         redis_client, client_ip(request), "login", limit=30, window=60
     ) or is_globally_rate_limited(redis_client, "login", limit=300, window=60):
         raise HTTPException(status_code=429, detail="Too Many Requests")
 
-    if len(public_key) > MAX_PGP_FIELD or len(signature) > MAX_PGP_FIELD:
-        raise HTTPException(status_code=413, detail="Payload too large")
+    expected_challenge = redis_client.get(challenge_id) if challenge_id else None
 
-    expected_challenge = redis_client.get(challenge_id)
+    # Missing input: re-show the page (keeping the existing challenge if it's
+    # still valid, otherwise a fresh one) with guidance.
+    if not public_key.strip() or not signature.strip():
+        challenge, challenge_id = _challenge_to_show(expected_challenge, challenge_id)
+        return _render_login(
+            request,
+            challenge,
+            challenge_id,
+            "Please paste both your PGP public key and the clearsigned challenge "
+            "before logging in.",
+            status_code=400,
+        )
+
+    if len(public_key) > MAX_PGP_FIELD or len(signature) > MAX_PGP_FIELD:
+        challenge, challenge_id = _challenge_to_show(expected_challenge, challenge_id)
+        return _render_login(
+            request,
+            challenge,
+            challenge_id,
+            "That input is too large. Paste only your public key and the signed "
+            "challenge, nothing more.",
+            status_code=413,
+        )
+
     if not expected_challenge:
-        raise HTTPException(status_code=400, detail="Challenge expired")
+        # The challenge they signed has expired (or was never issued). Give them
+        # a fresh one to sign rather than a dead end.
+        challenge, challenge_id = _issue_challenge()
+        return _render_login(
+            request,
+            challenge,
+            challenge_id,
+            "Your login challenge expired. Here is a new one — please sign it and "
+            "try again.",
+            status_code=400,
+        )
 
     # pgpy verification is synchronous and CPU-heavy on attacker-controlled
     # input; run it off the event loop so one slow/malicious key can't stall
@@ -96,14 +158,16 @@ async def login(
         )
         return response
 
-    return templates.TemplateResponse(
-        "login.html",
-        {
-            "request": request,
-            "challenge": expected_challenge,
-            "challenge_id": challenge_id,
-            "error": "Verification Failed",
-        },
+    # The challenge is single-use but only consumed on success, so it is still
+    # valid here -- keep showing it so the user can fix their key/signature and
+    # retry against the same challenge.
+    return _render_login(
+        request,
+        expected_challenge,
+        challenge_id,
+        "Verification failed. Make sure you clearsigned the exact challenge above "
+        "with the key whose public block you pasted.",
+        status_code=401,
     )
 
 
