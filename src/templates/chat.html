@@ -31,7 +31,10 @@
 <body>
     <h1>Start a New Chat</h1>
     <p>Logged in as: <strong>{{ user_id }}</strong></p>
-    
+    <form action="/logout" method="post">
+        <button type="submit">Log out</button>
+    </form>
+
     <div>
         <input type="text" id="recipientId" placeholder="Enter Recipient ID" />
         <button onclick="startChat()">Start Chat</button>

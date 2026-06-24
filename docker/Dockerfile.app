@@ -26,12 +26,13 @@ USER appuser
 #    WebSockets in an in-process dict, so multiple workers would route
 #    messages to the wrong process. Scaling out needs a Redis pub/sub
 #    backplane first.
-#  - --proxy-headers + --forwarded-allow-ips=* let the app see the real
-#    client IP and scheme from Caddy's X-Forwarded-* headers. This is safe
-#    ONLY because the published port is bound to 127.0.0.1 (see the compose
-#    files), so nothing but the local reverse proxy / Tor can reach it.
+#  - --proxy-headers + --forwarded-allow-ips=127.0.0.1 let the app see the real
+#    client IP and scheme from Caddy's X-Forwarded-* headers, but ONLY when the
+#    immediate peer is the local proxy / Tor daemon. Trusting "*" would let any
+#    direct client spoof X-Forwarded-For (and thus the per-IP rate limiter) if
+#    the port were ever exposed; pinning to loopback removes that footgun.
 #  - --limit-concurrency sheds load (503) instead of unbounded queueing.
 #  - --timeout-keep-alive trims idle keep-alive sockets (slowloris).
 CMD ["uvicorn", "src:app", "--host", "0.0.0.0", "--port", "5000", \
-     "--proxy-headers", "--forwarded-allow-ips", "*", \
+     "--proxy-headers", "--forwarded-allow-ips", "127.0.0.1", \
      "--limit-concurrency", "200", "--timeout-keep-alive", "5"]

@@ -5,7 +5,13 @@ from fastapi.concurrency import run_in_threadpool
 import uuid
 import redis
 from ..services import verify_login, client_ip, is_rate_limited, sign_user_id
-from ..env import CHALLENGE_LIFETIME, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
+from ..env import (
+    CHALLENGE_LIFETIME,
+    REDIS_HOST,
+    REDIS_PORT,
+    REDIS_PASSWORD,
+    SESSION_LIFETIME,
+)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="src/templates")
@@ -68,6 +74,10 @@ async def login(
         response.set_cookie(
             key="user_id",
             value=sign_user_id(user_id),
+            # Cap the cookie's browser lifetime to the signed token's lifetime.
+            # The server also enforces expiry from the signed issue time, so
+            # this is just so well-behaved clients drop it on their own.
+            max_age=SESSION_LIFETIME,
             httponly=True,
             # https on clearnet (via Caddy's X-Forwarded-Proto); the onion
             # service is plain http, where a Secure cookie would never be sent.
@@ -85,3 +95,21 @@ async def login(
             "error": "Verification Failed",
         },
     )
+
+
+@router.post("/logout")
+async def logout(request: Request):
+    """Clear the session cookie and return to the login page.
+
+    Sessions are stateless (signed cookies), so this clears the client's copy.
+    Tokens still expire on their own via SESSION_LIFETIME; server-side
+    revocation of a leaked-but-unexpired token is tracked as future work.
+    """
+    response = RedirectResponse(url="/", status_code=303)
+    response.delete_cookie(
+        key="user_id",
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="strict",
+    )
+    return response
