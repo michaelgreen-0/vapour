@@ -4,6 +4,10 @@
 // strict script-src 'self' Content-Security-Policy.
 const VAPOUR_SCRIPT = document.currentScript;
 
+// This file only runs when JavaScript is enabled, so drop the no-JS warning the
+// template renders by default.
+document.getElementById("jsWarning")?.remove();
+
 window.startChat = function(userId, recipientId) {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
     const ws = new WebSocket(wsProtocol + window.location.host + "/chat/ws/" + userId);
