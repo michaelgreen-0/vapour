@@ -1,0 +1,16 @@
+# Minimal Tor daemon that publishes the app as a v3 onion service.
+#
+# No SOCKS proxy, no relaying -- this container exists only to run a hidden
+# service in front of the app. The onion private key lives in a named volume
+# (see docker-compose.prod.yaml) so the .onion address survives rebuilds;
+# destroying that volume rotates the address.
+FROM alpine:3.20
+
+RUN apk add --no-cache tor
+
+COPY docker/torrc /etc/tor/torrc
+COPY docker/docker-entrypoint-tor.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["tor", "-f", "/etc/tor/torrc"]

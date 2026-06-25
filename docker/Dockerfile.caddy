@@ -1,0 +1,11 @@
+# Caddy built with the rate_limit plugin.
+#
+# The stock Caddy image does not bundle github.com/mholt/caddy-ratelimit, which
+# the Caddyfile's per-IP rate_limit blocks depend on. We compile a custom binary
+# with xcaddy (via Caddy's official builder image) and copy just that binary into
+# the slim runtime image, so no Go toolchain is left in the final layer.
+FROM caddy:2-builder AS builder
+RUN xcaddy build --with github.com/mholt/caddy-ratelimit
+
+FROM caddy:2
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy

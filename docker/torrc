@@ -1,0 +1,19 @@
+# Onion-service-only Tor configuration. No SOCKS, no relaying, no exit traffic.
+SocksPort 0
+RunAsDaemon 0
+Log notice stderr
+DataDirectory /var/lib/tor
+User tor
+
+# v3 hidden service pointing straight at the app over the internal Docker
+# network. Onion transport encryption replaces TLS, so this bypasses Caddy --
+# the app's own middleware still applies the security headers and body cap.
+HiddenServiceDir /var/lib/tor/vapour
+HiddenServicePort 80 vapour:5000
+
+# Proof-of-work + intro-point rate limiting are the onion's DoS defense: every
+# onion client arrives via the local Tor daemon and shares one address, so they
+# cannot be per-IP limited. Pairs with the in-app server-wide /login limiter.
+# (Requires a Tor build with the pow module; the deploy step verifies this and
+# drops the line if the packaged tor was not built with it.)
+HiddenServicePoWDefensesEnabled 1
