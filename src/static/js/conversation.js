@@ -1,3 +1,9 @@
+// Captured during this script's synchronous execution so we can read the
+// data-* attributes the template set on the <script> tag. Passing user/recipient
+// via attributes (instead of an inline script call) lets the page run under a
+// strict script-src 'self' Content-Security-Policy.
+const VAPOUR_SCRIPT = document.currentScript;
+
 window.startChat = function(userId, recipientId) {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
     const ws = new WebSocket(wsProtocol + window.location.host + "/chat/ws/" + userId);
@@ -8,6 +14,8 @@ window.startChat = function(userId, recipientId) {
     const statusDiv = document.getElementById('status');
 
     let myKeyPair = null;
+    let myPublicKeyJwk = null;
+    let theirPublicKeyJwk = null;
     let sharedSecret = null;
     let isSecure = false;
 
@@ -16,6 +24,63 @@ window.startChat = function(userId, recipientId) {
         statusElement.textContent = message;
         statusElement.className = isError ? 'error-message' : 'system-message';
         statusDiv.appendChild(statusElement);
+    }
+
+    function canonicalize(value) {
+        if (Array.isArray(value)) {
+            return "[" + value.map(canonicalize).join(",") + "]";
+        }
+        if (value && typeof value === "object") {
+            return "{" + Object.keys(value).sort().map((key) => {
+                return JSON.stringify(key) + ":" + canonicalize(value[key]);
+            }).join(",") + "}";
+        }
+        return JSON.stringify(value);
+    }
+
+    function formatSafetyNumber(digest) {
+        const bytes = new Uint8Array(digest);
+        const groups = [];
+        for (let i = 0; i < 12; i += 2) {
+            const value = (bytes[i] << 8) | bytes[i + 1];
+            groups.push(String(value).padStart(5, "0"));
+        }
+        return groups.join(" ");
+    }
+
+    async function calculateSafetyNumber() {
+        const participants = [
+            { fingerprint: userId, publicKey: myPublicKeyJwk },
+            { fingerprint: recipient, publicKey: theirPublicKeyJwk }
+        ].sort((a, b) => {
+            if (a.fingerprint < b.fingerprint) return -1;
+            if (a.fingerprint > b.fingerprint) return 1;
+            return 0;
+        });
+
+        const transcript = {
+            version: "vapour-safety-number-v1",
+            participants: participants
+        };
+        const encoded = new TextEncoder().encode(canonicalize(transcript));
+        const digest = await window.crypto.subtle.digest("SHA-256", encoded);
+        return formatSafetyNumber(digest);
+    }
+
+    async function showSafetyNumber() {
+        const safetyNumber = await calculateSafetyNumber();
+
+        statusDiv.innerHTML = "";
+
+        const stateElement = document.createElement("div");
+        stateElement.className = "system-message";
+        stateElement.textContent = "Encrypted session established. Compare this safety number with your contact:";
+        statusDiv.appendChild(stateElement);
+
+        const safetyElement = document.createElement("div");
+        safetyElement.className = "safety-number";
+        safetyElement.textContent = safetyNumber;
+        statusDiv.appendChild(safetyElement);
     }
 
     // 1. Key Generation
@@ -37,12 +102,12 @@ window.startChat = function(userId, recipientId) {
 
     // 2. Key Exchange
     async function sendPublicKey(isReply = false) {
-        const publicKey = await window.crypto.subtle.exportKey("jwk", myKeyPair.publicKey);
+        myPublicKeyJwk = await window.crypto.subtle.exportKey("jwk", myKeyPair.publicKey);
         logStatus("Sending public key to " + recipient);
         ws.send(JSON.stringify({
             target_user: recipient,
             type: 'key_exchange',
-            publicKey: publicKey,
+            publicKey: myPublicKeyJwk,
             is_reply: isReply
         }));
     }
@@ -69,10 +134,9 @@ window.startChat = function(userId, recipientId) {
             
             sharedSecret = ecdhSecret;
             isSecure = true;
-            logStatus("Secure connection established. You can now chat safely.");
+            await showSafetyNumber();
             messageInput.disabled = false;
             sendButton.disabled = false;
-            statusDiv.innerHTML = ''; // Clear status messages
         } catch (error) {
             logStatus("Error deriving shared secret. Communication will not be secure.", true);
             console.error(error);
@@ -137,6 +201,7 @@ window.startChat = function(userId, recipientId) {
 
         // Case 1: Received a public key
         if (data.type === 'key_exchange' && data.publicKey && data.sender === recipient) {
+            theirPublicKeyJwk = data.publicKey;
             await deriveSharedSecret(data.publicKey);
             if (!data.is_reply) {
                 await sendPublicKey(true);
@@ -199,3 +264,8 @@ window.startChat = function(userId, recipientId) {
         }
     });
 };
+
+// Auto-start using the identifiers the template provided via data-* attributes.
+if (VAPOUR_SCRIPT && VAPOUR_SCRIPT.dataset.userId && VAPOUR_SCRIPT.dataset.recipientId) {
+    window.startChat(VAPOUR_SCRIPT.dataset.userId, VAPOUR_SCRIPT.dataset.recipientId);
+}

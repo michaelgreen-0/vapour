@@ -4,17 +4,54 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.app
     container_name: vapour
+    restart: unless-stopped
+    # Provide config/secrets at runtime instead of baking them into the image.
+    env_file:
+      - ../.env
+    # Bind to loopback only. The reverse proxy (Caddy) and Tor reach the app
+    # over localhost; the app is never directly exposed to the internet.
+    # Keep this as 127.0.0.1 — the app trusts X-Forwarded-* from any peer.
     ports:
       - "127.0.0.1:5000:5000"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - app-network
+    security_opt:
+      - "no-new-privileges:true"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 512M
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
+    restart: unless-stopped
+    # $$ escapes compose interpolation so the shell in the container expands
+    # REDIS_PASSWORD (injected via env_file). maxmemory + allkeys-lru means a
+    # challenge flood evicts old keys instead of OOM-killing the host; --save ""
+    # disables disk persistence (challenges are ephemeral and TTL'd anyway).
+    command: >
+      sh -c 'exec redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --requirepass "$$REDIS_PASSWORD"'
+    env_file:
+      - ../.env
     networks:
       - app-network
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 networks:
   app-network:

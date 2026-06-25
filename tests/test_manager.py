@@ -34,6 +34,25 @@ class TestConnectionManager(unittest.TestCase):
         self.manager.disconnect(user_id)
         self.assertNotIn(user_id, self.manager.active_connections)
 
+    def test_capacity_blocks_new_user_at_cap(self):
+        manager = ConnectionManager(max_connections=1)
+        manager.active_connections["existing"] = AsyncMock()
+        # A brand-new identity does not fit...
+        self.assertFalse(manager.has_capacity_for("newcomer"))
+        # ...but the already-connected user may always reconnect.
+        self.assertTrue(manager.has_capacity_for("existing"))
+
+    def test_disconnect_only_removes_matching_socket(self):
+        old_ws = AsyncMock()
+        new_ws = AsyncMock()
+        self.manager.active_connections["u"] = new_ws
+        # A late cleanup carrying the replaced socket must not evict the new one.
+        self.manager.disconnect("u", old_ws)
+        self.assertIs(self.manager.active_connections.get("u"), new_ws)
+        # Cleanup carrying the current socket does remove it.
+        self.manager.disconnect("u", new_ws)
+        self.assertNotIn("u", self.manager.active_connections)
+
     def test_send_personal_message(self):
         async def run_test():
             sender_id = "sender"
