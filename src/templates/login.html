@@ -5,8 +5,19 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+    <!-- Visible by default; js-check.js removes it when JavaScript runs, so it
+         stays only when scripts are blocked (Tor Browser "Safer"/"Safest" on the
+         http onion). Login itself works without JS, but the chat does not, so we
+         warn at the entry point. -->
+    <div class="js-warning" id="jsWarning">
+        ⚠ Vapour needs JavaScript to chat. If you're using Tor Browser, open the
+        shield menu and set your <strong>Security Level</strong> to
+        <strong>Standard</strong> — the onion service is served over http, where
+        the higher levels disable JavaScript.
+    </div>
+
     <h1>Vapour Login</h1>
-    
+
     {% if error %}
     <div class="error">{{ error }}</div>
     {% endif %}
@@ -29,5 +40,7 @@
         <br><br>
         <button type="submit">Login</button>
     </form>
+
+    <script src="/static/js/js-check.js"></script>
 </body>
 </html>
