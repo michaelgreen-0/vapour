@@ -1,0 +1,67 @@
+# Vapour reverse-proxy config for the containerized production stack
+# (docker-compose.prod.yaml). The deploy step copies this to ./Caddyfile (which
+# is gitignored) with __DOMAIN__ substituted for the real clearnet host.
+#
+# Differs from Caddyfile.example (host-managed edge) in two ways:
+#   - it forwards to the app over the Docker network (vapour:5000), not loopback;
+#   - it adds HSTS, which is set here (clearnet/HTTPS only) rather than in the
+#     app middleware, since the onion service is plain http and must not get it.
+#
+# Per-IP rate limiting needs the caddy-ratelimit plugin, which Dockerfile.caddy
+# compiles in.
+
+{
+	# rate_limit is a non-standard directive, so give it an explicit order.
+	order rate_limit before reverse_proxy
+
+	# Server-wide timeouts blunt slowloris-style attacks that hold sockets open.
+	servers {
+		timeouts {
+			read_header 5s
+			read_body   10s
+			idle        30s
+		}
+	}
+}
+
+__DOMAIN__ {
+	encode gzip
+
+	# PGP key + clearsigned challenge are a few KB; cap bodies hard. The app
+	# enforces the same 64KB cap itself (so onion traffic is covered too); this
+	# is just an earlier, cheaper rejection at the edge.
+	request_body {
+		max_size 64KB
+	}
+
+	# HSTS for the clearnet host only. The app middleware owns the other
+	# security headers (CSP, X-Frame-Options, etc.) so they apply to onion too;
+	# HSTS would be wrong over the onion's http transport, so it lives here.
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+	# Stricter budget for the expensive auth endpoint...
+	@login path /login
+	rate_limit @login {
+		zone login {
+			key    {remote_host}
+			events 20
+			window 1m
+		}
+	}
+
+	# ...and a general per-IP ceiling for everything else.
+	rate_limit {
+		zone general {
+			key    {remote_host}
+			events 120
+			window 1m
+		}
+	}
+
+	# Caddy proxies WebSockets automatically (no extra config needed).
+	reverse_proxy vapour:5000 {
+		# Make X-Forwarded-For authoritative: overwrite any client-supplied
+		# value with the real peer so the app's per-IP limiter can't be spoofed.
+		header_up X-Forwarded-For {remote_host}
+	}
+}

@@ -1,0 +1,119 @@
+# Full single-host production stack: app + redis + Caddy (clearnet TLS) + Tor
+# (onion service). Bring it up from the repo root with:
+#
+#   docker compose -f docker/docker-compose.prod.yaml up -d --build
+#
+# Unlike docker-compose.deploy.yaml (app + redis only, for a host-managed edge),
+# Caddy and Tor run as containers here and reach the app over the internal
+# Docker network. The app port is therefore NOT published to the host -- only
+# Caddy's 80/443 are reachable from outside the box.
+services:
+  vapour:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    container_name: vapour
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    # No host port publish: the app is reachable only by Caddy and Tor on the
+    # internal network. Because it is never exposed to the host/internet,
+    # trusting X-Forwarded-* from any in-network peer (--forwarded-allow-ips=*)
+    # is safe -- the only peers are Caddy (which overwrites X-Forwarded-For with
+    # the real client) and Tor (onion traffic, no XFF). This command override is
+    # required because Caddy connects from a Docker bridge IP, not 127.0.0.1, so
+    # the Dockerfile's loopback-pinned default would discard its forwarded
+    # headers (breaking the Secure-cookie/scheme detection and per-IP limiter).
+    command: ["uvicorn", "src:app", "--host", "0.0.0.0", "--port", "5000",
+              "--proxy-headers", "--forwarded-allow-ips", "*",
+              "--no-server-header",
+              "--limit-concurrency", "200", "--timeout-keep-alive", "5"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    security_opt:
+      - "no-new-privileges:true"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 512M
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # $$ escapes compose interpolation so the container shell expands
+    # REDIS_PASSWORD (from env_file). maxmemory + allkeys-lru means a challenge
+    # flood evicts old keys instead of OOM-killing the host; --save "" disables
+    # disk persistence (challenges are ephemeral and TTL'd anyway).
+    command: >
+      sh -c 'exec redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --requirepass "$$REDIS_PASSWORD"'
+    env_file:
+      - ../.env
+    networks:
+      - app-network
+    security_opt:
+      - "no-new-privileges:true"
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  caddy:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.caddy
+    container_name: caddy
+    restart: unless-stopped
+    # The only internet-facing ports on the host. 443/udp serves HTTP/3.
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - vapour
+    networks:
+      - app-network
+    security_opt:
+      - "no-new-privileges:true"
+
+  tor:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.tor
+    container_name: tor
+    restart: unless-stopped
+    # Onion key + state persist here so the .onion address is stable across
+    # rebuilds. Back this volume up if you want to keep the address.
+    volumes:
+      - tor_data:/var/lib/tor
+    depends_on:
+      - vapour
+    networks:
+      - app-network
+    security_opt:
+      - "no-new-privileges:true"
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  tor_data:
