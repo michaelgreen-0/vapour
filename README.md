@@ -6,7 +6,7 @@ Use your PGP public key as a way to authenticate into this encrypted messaging s
 
 Clearnet - [https://vapour.chat](https://vapour.chat)
 
-Onion Service - [http://2erryx4wxgsk76vby34bmu3zi6i4dfkf6dxndfqplvesmlhcy5i2nzad.onion](http://2erryx4wxgsk76vby34bmu3zi6i4dfkf6dxndfqplvesmlhcy5i2nzad.onion)
+Onion Service - [http://kuy5tggolilpsbmeuotdhsccahjfvvozfqzqcgxut4n4dvopurmty3qd.onion](http://kuy5tggolilpsbmeuotdhsccahjfvvozfqzqcgxut4n4dvopurmty3qd.onion)
 
 ## Description
 
