@@ -105,3 +105,14 @@ textarea {
     letter-spacing: 0;
     user-select: all;
 }
+
+/* No-JavaScript warning. Rendered by default and removed by the page's JS once
+   it runs, so it only stays visible when scripts are blocked. */
+.js-warning {
+    border: 1px solid #a33;
+    background-color: #3a1f1f;
+    color: #fdd;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+}

@@ -5,6 +5,18 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+    <!-- Shown by default; chat.js removes it once JavaScript actually runs, so it
+         stays visible whenever scripts are blocked (e.g. Tor Browser's "Safer"/
+         "Safest" levels disable JS on the http onion). A plain <noscript> would
+         not cover that case, since scripts are CSP-blocked rather than the browser
+         disabling scripting -- so we hide-with-JS instead. -->
+    <div class="js-warning" id="jsWarning">
+        ⚠ Vapour needs JavaScript to work. If you're using Tor Browser, open the
+        shield menu and set your <strong>Security Level</strong> to
+        <strong>Standard</strong> — the onion service is served over http, where
+        the higher levels disable JavaScript.
+    </div>
+
     <h1>Start a New Chat</h1>
     <p>Logged in as: <strong>{{ user_id }}</strong></p>
     <form action="/logout" method="post">

@@ -5,6 +5,15 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+    <!-- See chat.html: visible by default, removed by conversation.js when JS
+         runs, so it persists when scripts are blocked. -->
+    <div class="js-warning" id="jsWarning">
+        ⚠ Vapour needs JavaScript to work. If you're using Tor Browser, open the
+        shield menu and set your <strong>Security Level</strong> to
+        <strong>Standard</strong> — the onion service is served over http, where
+        the higher levels disable JavaScript.
+    </div>
+
     <h1>Chat with {{ recipient_id }}</h1>
     <p><a href="/chat">&larr; Back to contacts</a></p>
     
