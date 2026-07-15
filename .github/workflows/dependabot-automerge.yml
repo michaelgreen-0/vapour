@@ -15,9 +15,12 @@ jobs:
         id: meta
         uses: dependabot/fetch-metadata@v3
 
-      # Major bumps can break things, so leave them for manual review.
+      # Major bumps can break things, so leave them for manual review. Docker
+      # base-image bumps are excluded entirely: a base-image change can pull in a
+      # new interpreter (e.g. Python 3.14 dropped the stdlib `imghdr` that pgpy
+      # needs) that unit tests on the runner don't catch, so those get eyes.
       - name: Enable auto-merge for patch and minor updates
-        if: steps.meta.outputs.update-type != 'version-update:semver-major'
+        if: steps.meta.outputs.update-type != 'version-update:semver-major' && steps.meta.outputs.package-ecosystem != 'docker'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
