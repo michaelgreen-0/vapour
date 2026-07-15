@@ -35,8 +35,23 @@ jobs:
       - name: Run tests
         run: uv run --no-sync pytest -q
 
+  # Tests run on the runner's Python, so an interpreter change in the base image
+  # can pass CI yet crash at container start (e.g. Python 3.13 dropping `imghdr`,
+  # which pgpy imports). Build the real image and import the app inside it to
+  # catch that before it reaches the VPS.
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build app image
+        run: docker build -f docker/Dockerfile.app -t vapour-app:ci .
+
+      - name: Import the app inside the image
+        run: docker run --rm vapour-app:ci python -c "import src"
+
   deploy:
-    needs: test
+    needs: [test, docker-build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
