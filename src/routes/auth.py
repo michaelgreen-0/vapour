@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from fastapi.concurrency import run_in_threadpool
 import uuid
 import redis
+from ..templating import templates
 from ..services import (
     verify_login,
     client_ip,
@@ -20,7 +20,6 @@ from ..env import (
 )
 
 router = APIRouter()
-templates = Jinja2Templates(directory="src/templates")
 
 redis_client = redis.Redis(
     host=REDIS_HOST,

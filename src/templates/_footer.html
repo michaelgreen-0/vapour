@@ -1,0 +1,7 @@
+<footer class="app-version">
+    {% if release_url %}
+    <a href="{{ release_url }}" target="_blank" rel="noopener noreferrer">vapour {{ app_version }}</a>
+    {% else %}
+    vapour {{ app_version }}
+    {% endif %}
+</footer>

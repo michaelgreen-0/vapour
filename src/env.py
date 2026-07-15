@@ -17,3 +17,26 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development").strip().lower()
 # How long a session cookie stays valid, in seconds. Default 12h. Kept short so
 # a leaked cookie expires on its own even without server-side revocation.
 SESSION_LIFETIME = int(os.getenv("SESSION_LIFETIME", str(12 * 60 * 60)))
+
+# Version of the running build, shown in the page footer. CI sets this from
+# `git describe --tags --always` at deploy time; "dev" is the local fallback.
+APP_VERSION = os.getenv("APP_VERSION", "dev")
+
+_REPO_URL = "https://github.com/michaelgreen-0/vapour"
+
+
+def _release_url(version: str) -> str | None:
+    """Map a version string to the GitHub page that best explains it."""
+    if version == "dev":
+        return None
+    # A `git describe` build past a tag ("v0.1.0-3-gab12cd") points at its commit;
+    # the sha follows the final "-g". An exact tag points at its release page.
+    if "-g" in version:
+        sha = version.rsplit("-g", 1)[1]
+        return f"{_REPO_URL}/commit/{sha}"
+    if version.startswith("v"):
+        return f"{_REPO_URL}/releases/tag/{version}"
+    return f"{_REPO_URL}/commit/{version}"
+
+
+RELEASE_URL = _release_url(APP_VERSION)
