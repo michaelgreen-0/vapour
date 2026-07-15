@@ -1,15 +1,14 @@
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect, Cookie, status
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from typing import Optional
 from urllib.parse import urlsplit
 import asyncio
 import json
 import time
 from ..services import ConnectionManager, unsign_user_id, is_valid_fingerprint
+from ..templating import templates
 
 router = APIRouter(prefix="/chat")
-templates = Jinja2Templates(directory="src/templates")
 manager = ConnectionManager()
 
 # Largest single WebSocket frame we will parse. An ECDH JWK is a few hundred

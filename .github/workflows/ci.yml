@@ -40,7 +40,13 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
+      # Full history + tags so `git describe` can resolve the nearest release.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Derive app version
+        run: echo "APP_VERSION=$(git describe --tags --always)" >> "$GITHUB_ENV"
 
       - name: Configure SSH
         env:
@@ -76,6 +82,7 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           DOMAIN: vapour.chat
+          APP_VERSION: ${{ env.APP_VERSION }}
         run: |
           ssh -i "$HOME/.ssh/deploy_key" \
             -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
@@ -83,5 +90,5 @@ jobs:
             "$VPS_USER@$VPS_HOST" \
             "cd ~/vapour \
              && sed 's/__DOMAIN__/$DOMAIN/' docker/Caddyfile.prod.example > docker/Caddyfile \
-             && docker compose -f docker/docker-compose.prod.yaml up -d --build \
+             && APP_VERSION=$APP_VERSION docker compose -f docker/docker-compose.prod.yaml up -d --build \
              && docker image prune -f"

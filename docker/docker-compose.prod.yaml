@@ -16,6 +16,10 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env
+    # Version string for the footer, forwarded by CI from `git describe`; falls
+    # back to "dev" when APP_VERSION is not set in the deploy shell.
+    environment:
+      - APP_VERSION=${APP_VERSION:-dev}
     # No host port publish: the app is reachable only by Caddy and Tor on the
     # internal network. Because it is never exposed to the host/internet,
     # trusting X-Forwarded-* from any in-network peer (--forwarded-allow-ips=*)
