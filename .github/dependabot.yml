@@ -16,3 +16,11 @@ updates:
     directory: "/docker"
     schedule:
       interval: "daily"
+    ignore:
+      # pgpy imports the stdlib `imghdr`, which Python removed in 3.13. Stay on
+      # the 3.11 base image and don't let Dependabot propose a newer minor/major
+      # (patch bumps of 3.11.x still flow through the 3.11-slim tag).
+      - dependency-name: "python"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-major"
