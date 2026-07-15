@@ -4,7 +4,7 @@
 # service in front of the app. The onion private key lives in a named volume
 # (see docker-compose.prod.yaml) so the .onion address survives rebuilds;
 # destroying that volume rotates the address.
-FROM alpine:3.20
+FROM alpine:3.24
 
 RUN apk add --no-cache tor
 
